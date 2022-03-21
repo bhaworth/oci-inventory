@@ -45,9 +45,9 @@ output_dir = "./log"
 
 # Output formats for readable, columns style output and csv files
 field_names = ['Tenancy', 'Region', 'Compartment', 'Type', 'Name', 'State', 'DB',
-				'Shape', 'OCPU', 'GBytes', 'BYOLstatus',	'VolAttached', 'Created', 'CreatedBy', 'OCID']
+				'Shape', 'OCPU', 'GBytes', 'BYOLstatus',	'VolAttached', 'Created', 'CreatedBy', 'AD', 'OCID']
 print_format = '{Tenancy:24s} {Region:14s} {Compartment:54s} {Type:26s} {Name:54.54s} {State:18s} {DB:4s} ' \
-				'{Shape:20s} {OCPU:4d} {GBytes:>8.3f} {BYOLstatus:10s} {VolAttached:12s} {Created:32s} {CreatedBy:32s} {OCID:120}'
+				'{Shape:20s} {OCPU:4d} {GBytes:>8.3f} {BYOLstatus:10s} {VolAttached:12s} {Created:32s} {CreatedBy:32s} {AD:20s} {OCID:120}'
 
 # Header format removes the named placeholders
 header_format = re.sub('{[A-Z,a-z]*', '{', print_format)  # Remove names
@@ -224,10 +224,13 @@ def list_tenancy_resources(compartment_list, base_compartment_id):
 				try:
 					# Only interested in tracking down the creator (person), so strip off the
 					# oracleidentitycloudservice/ before the username
-					created_by = resource.defined_tags['Owner']['Creator'].replace('oracleidentitycloudservice/', '')
+					created_by = resource.defined_tags['Oracle-Tags']['CreatedBy'].replace('oracleidentitycloudservice/', '')
 				except:
 					# Ignore all errors such as tag missing
 					pass
+				
+				# Extract AD of the resource
+				availability_domain = '-' if resource.availability_domain is None else resource.availability_domain
 
 				# Some items do not return a lifecycle state (eg. Tags)
 				state = '-' if resource.lifecycle_state is None else resource.lifecycle_state
@@ -322,6 +325,7 @@ def list_tenancy_resources(compartment_list, base_compartment_id):
 					'VolAttached': volume_attachment_flag,
 					'Created': resource.time_created.strftime("%Y-%m-%d %H:%M:%S"),
 					'CreatedBy': created_by,
+					'AD': availability_domain,
 					'OCID': resource.identifier
 				}
 
